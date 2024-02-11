@@ -1,0 +1,28 @@
+# Note: If you use this file, rename it to lavalink.ini
+# Note 2: If any value contains the '%' character, you should use 2 instead of 1, for example: %%
+
+[something.host] # node name (can be any name)
+host=lava.link
+port=80
+password=youshallnotpass
+secure=false
+# The two items below are optional (you can choose not to include the lines below)
+region=us_central
+website=https://support.something.host/en/article/lavalink-hosting-okm26z/
+search=true
+retry_403=false
+search_providers=ytsearch scsearch
+
+#######################
+
+[Darren]
+host=n1.ll.darrennathanael.com
+port=2269
+password=glasshost1984
+secure=false
+region=us_central
+website=https://discord.glasshost.net/
+search_providers=ytsearch scsearch
+
+# Please note that the above servers are public; they may not always be available or may have issues, etc.
+# If you want to search for other public nodes, just search for: "free lavalink node"
