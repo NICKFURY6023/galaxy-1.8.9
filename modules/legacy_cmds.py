@@ -148,7 +148,7 @@ class Owner(commands.Cog):
         download_urls = [self.bot.config["LAVALINK_FILE_URL"]]
 
         if args.yml:
-            download_urls.append("https://github.com/zRitsu/LL-binaries/releases/download/0.0.1/application.yml")
+            download_urls.append("https://github.com/NICK-FURY-6023/LyricLoom.git")
 
         async with ctx.typing():
 
