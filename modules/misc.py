@@ -689,7 +689,7 @@ class Misc(commands.Cog):
             if user_data["custom_prefix"]:
                 embed.description += f"> ⌨️ **⠂Your User Prefix:** `{disnake.utils.escape_markdown(user_data['custom_prefix'], as_needed=True)}`\n"
 
-        links = "[`[Source]`](https://github.com/zRitsu/MuseHeart-MusicBot)"
+        links = "[`[Source]`](https://github.com/NICK-FURY-6023/LyricLoom)"
 
         if bot.config["SUPPORT_SERVER"]:
             links = f"[`[Support]`]({bot.config['SUPPORT_SERVER']})  **|** {links}"
