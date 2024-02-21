@@ -437,3 +437,4 @@ class ErrorHandler(commands.Cog):
 
 def setup(bot: BotCore):
     bot.add_cog(ErrorHandler(bot))
+###
