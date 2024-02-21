@@ -12,7 +12,7 @@ bools = {
 }
 
 DEFAULT_CONFIG = {
-    "DEFAULT_PREFIX": "!!",
+    "DEFAULT_PREFIX": "+",
     "AUTO_SYNC_COMMANDS": True,
     "OWNER_IDS": "",
     "COMMAND_LOG": False,
@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
     "AUTO_ERROR_REPORT_WEBHOOK": '',
     "INTERACTION_COMMAND_ONLY": False,
     "PRESENCE_INTERVAL": 900,
-    "SOURCE_REPO": "https://github.com/SeasonPhan/MuseHeart-MusicBot-EN.git",
+    "SOURCE_REPO": "https://github.com/NICK-FURY-6023/LyricLoom.git",
     "SUPPORT_SERVER": "",
     "ADDITIONAL_BOT_IDS": "",
     "INVITE_PERMISSIONS": 332892794064,

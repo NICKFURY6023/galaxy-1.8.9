@@ -3,7 +3,7 @@ services:
     name: museheart_music
     env: python
     plan: free
-    repo: https://github.com/SeasonPhan/MuseHeart-MusicBot-EN.git
+    repo: https://github.com/NICK-FURY-6023/galaxy-1.8.9
     buildCommand: pip3 install -r requirements.txt --no-cache-dir
     startCommand: python3 main.py
     envVars:
@@ -26,5 +26,7 @@ services:
       - key: AUTO_DOWNLOAD_LAVALINK_SERVERLIST
         value: true
       - key: MONGO_SSL_FIX
+        value: true
+      - key: PLAYER_SESSIONS_MONGODB
         value: true
     autoDeploy: false # optional
