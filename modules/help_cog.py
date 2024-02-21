@@ -296,7 +296,7 @@ class HelpCog(commands.Cog, name="Help"):
 
     async def parse_direct(self, ctx: CustomContext, cmd_name: list):
 
-        # TODO: Fix recursive mode of subcommands
+        # TODO: Fix recursive mode of subcommands #
         cmd: Union[commands.command, commands.Group] = None
         for cname in cmd_name:
             if cmd:
