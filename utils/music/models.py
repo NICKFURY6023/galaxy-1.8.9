@@ -426,6 +426,7 @@ class LavalinkPlayer(wavelink.Player):
         self.filters: dict = {}
         self.idle_task: Optional[asyncio.Task] = None
         self.members_timeout_task: Optional[asyncio.Task] = None
+        self.reconnect_voice_channel_task: Optional[asyncio.Task] = None
         self.idle_endtime: Optional[datetime.datetime] = None
         self.hint_rate = self.bot.config["HINT_RATE"]
         self.command_log: str = ""
@@ -606,11 +607,79 @@ class LavalinkPlayer(wavelink.Player):
 
             await cog.error_report_queue.put({"embed": embed})
 
+    async def reconnect_voice_channel(self):
+
+        try:
+            vc = self.bot.get_channel(self.last_channel.id)
+        except AttributeError:
+            vc = None
+
+        if not vc:
+
+            msg = "The voice channel was deleted..."
+
+            if self.static:
+                self.set_command_log(msg)
+                await self.destroy()
+
+            else:
+                try:
+                    self.bot.loop.create_task(self.text_channel.send(embed=disnake.Embed(
+                    description=msg,
+                    color=self.bot.get_color(self.guild.me)), delete_after=7))
+                except:
+                    traceback.print_exc()
+                await self.destroy()
+                return
+
+        while True:
+
+            try:
+                self.bot.music.players[self.guild_id]
+            except KeyError:
+                return
+
+            if self.guild.me.voice:
+                if isinstance(vc, disnake.StageChannel) \
+                        and self.guild.me not in vc.speakers \
+                        and vc.permissions_for(self.guild.me).mute_members:
+                    try:
+                        await self.guild.me.edit(suppress=False)
+                    except Exception:
+                        traceback.print_exc()
+                return
+
+            if self.is_closing:
+                return
+
+            if not self._new_node_task:
+
+                try:
+                    can_connect(vc, self.guild, bot=self.bot)
+                except Exception as e:
+                    self.set_command_log(f"The Player was terminated due to an error: {e}")
+                    await self.destroy()
+                    return
+
+                try:
+                    await self.connect(vc.id)
+                    self.set_command_log(text="I noticed an attempt to disconnect me from the channel. "
+                                                "If you want to disconnect me, use the command/button: **stop**.",
+                                           emoji="⚠️")
+                    self.update = True
+                    await asyncio.sleep(5)
+                    continue
+                except Exception:
+                    traceback.print_exc()
+
+            await asyncio.sleep(30)
 
     async def hook(self, event) -> None:
 
         if self.is_closing:
             return
+
+        await self.bot.wait_until_ready()
 
         if isinstance(event, wavelink.TrackEnd):
 
@@ -637,8 +706,6 @@ class LavalinkPlayer(wavelink.Player):
             except:
                 pass
 
-            await self.bot.wait_until_ready()
-
             await self.track_end()
 
             self.update = False
@@ -650,6 +717,9 @@ class LavalinkPlayer(wavelink.Player):
         if isinstance(event, wavelink.TrackStart):
 
             self.start_time = disnake.utils.utcnow()
+
+            if not self.current.autoplay:
+                self.queue_autoplay.clear()
 
             if self.auto_pause:
                 return
@@ -665,8 +735,6 @@ class LavalinkPlayer(wavelink.Player):
             if not send_message_perm:
                 self.text_channel = None
                 return
-
-            await self.bot.wait_until_ready()
 
             if not self.guild.me.voice:
                 try:
@@ -721,11 +789,10 @@ class LavalinkPlayer(wavelink.Player):
 
             cooldown = 10
 
-            await self.bot.wait_until_ready()
-
             if (event.error == "This IP address has been blocked by YouTube (429)" or
                 event.message == "Video returned by YouTube isn't what was requested" or
-                (error_403 := event.cause.startswith("java.lang.RuntimeException: Not success status code: 403"))
+                (error_403 := event.cause.startswith(("java.lang.RuntimeException: Not success status code: 403",
+                                                      "java.io.IOException: Invalid status code for video page response: 400")))
             ):
 
                 if error_403 and self.node.retry_403:
@@ -810,6 +877,7 @@ class LavalinkPlayer(wavelink.Player):
             if event.cause.startswith((
                     "java.lang.IllegalStateException: Failed to get media URL: 2000: An error occurred while decoding track token",
                     "java.net.SocketTimeoutException: Read timed out",
+                    "java.lang.RuntimeException: Not success status code: 204",
                     "java.net.SocketTimeoutException: Connect timed out",
                     "java.lang.IllegalArgumentException: Invalid bitrate",
                     "java.net.UnknownHostException:",
@@ -927,39 +995,7 @@ class LavalinkPlayer(wavelink.Player):
                 await self.connect(vc_id)
                 return
 
-            if event.code == 4014:
-                await asyncio.sleep(5)
-
-                vc = self.bot.get_channel(self.last_channel.id)
-
-                if not vc:
-
-                    msg = "The voice channel was deleted...."
-
-                    if self.static:
-                        self.command_log = msg
-                        await self.destroy()
-
-                    else:
-                        embed = disnake.Embed(
-                            description=msg,
-                            color=self.bot.get_color(self.guild.me))
-                        try:
-                            self.bot.loop.create_task(self.text_channel.send(embed=embed, delete_after=7))
-                        except:
-                            traceback.print_exc()
-                        await self.destroy()
-
-                elif not self.guild.me.voice:
-                    await self.connect(vc.id)
-
-                return
-
-            return
-
         if isinstance(event, wavelink.TrackStuck):
-
-            await self.bot.wait_until_ready()
 
             try:
                 self.message_updater_task.cancel()
@@ -977,6 +1013,9 @@ class LavalinkPlayer(wavelink.Player):
 
             await self.process_next()
 
+            return
+
+        elif isinstance(event, wavelink.WebsocketClosed):
             return
 
         print(f"Unknown Wavelink event: {repr(event)}")
@@ -1349,7 +1388,7 @@ class LavalinkPlayer(wavelink.Player):
 
                 try:
                     embed = disnake.Embed(
-                        description=f"**Failed to retrieve autoplay data:\n"
+                        description=f"**Failed to retrieve autoplay data:**\n"
                                     f"{error_msg}",
                         color=disnake.Colour.red())
                     await self.text_channel.send(embed=embed, delete_after=10)
@@ -1404,7 +1443,8 @@ class LavalinkPlayer(wavelink.Player):
         except:
             return None
 
-    async def process_next(self, start_position: Union[int, float] = 0, inter: disnake.MessageInteraction = None, force_np=False):
+    async def process_next(self, start_position: Union[int, float] = 0, inter: disnake.MessageInteraction = None,
+                           force_np=False, clear_autoqueue = True):
 
         if self.locked or self.is_closing:
             return
@@ -1434,12 +1474,10 @@ class LavalinkPlayer(wavelink.Player):
         except:
             pass
 
-        clear_autoqueue = True
-
-        if len(self.queue):
+        try:
             track = self.queue.popleft()
 
-        else:
+        except:
 
             try:
 
@@ -1677,12 +1715,12 @@ class LavalinkPlayer(wavelink.Player):
             )
 
         embed = disnake.Embed(
-            description=f"**There are no songs in the queue... Add a song or use one of the options below.",
+            description="**There are no songs in the queue... Add a song or use one of the options below.**",
             color=self.bot.get_color(self.guild.me)
         )
 
         if not self.keep_connected:
-            embed.description += "\n\nNote:** `The Player will be turned off automatically` " \
+            embed.description += "\n\n**Note:** `The Player will be turned off automatically` " \
                         f"<t:{int((disnake.utils.utcnow() + datetime.timedelta(seconds=self.bot.config['IDLE_TIMEOUT'])).timestamp())}:R> " \
                         f"`if no action is taken...`"
 
@@ -1990,7 +2028,7 @@ class LavalinkPlayer(wavelink.Player):
                         emoji="⏭️", custom_id=PlayerControls.skip),
                     disnake.ui.Button(
                         emoji="<:music_queue:703761160679194734>", custom_id=PlayerControls.queue,
-                        disabled=not self.queue),
+                        disabled=not (self.queue or self.queue_autoplay)),
                     disnake.ui.Select(
                         placeholder="More options:",
                         custom_id="musicplayer_dropdown_inter",
@@ -2537,6 +2575,10 @@ class LavalinkPlayer(wavelink.Player):
 
         while True:
 
+            if self.node.is_available:
+                self._new_node_task = None
+                return
+
             nodes = sorted([n for n in self.bot.music.nodes.values() if n.is_available and n.identifier != ignore_node],
                               key=lambda n: n.stats.players)
             if not nodes:
@@ -2654,6 +2696,7 @@ class LavalinkPlayer(wavelink.Player):
                 "bot_id": self.bot.user.id,
                 "bot_name": str(self.bot.user),
                 "thumb": thumb,
+                "guild": self.guild.name,
                 "auth_enabled": self.bot.config["ENABLE_RPC_AUTH"],
                 "listen_along_invite": self.listen_along_invite
             }

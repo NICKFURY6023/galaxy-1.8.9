@@ -1698,7 +1698,7 @@ class MusicSettings(commands.Cog):
 
     @commands.slash_command(cooldown=customskin_cd, max_concurrency=customskin__mc,
                             description=f"{desc_prefix}Create your own skins/templates for the Player.",
-                            default_member_permissions=disnake.Permissions(administrator=True))
+                            default_member_permissions=disnake.Permissions(administrator=True), dm_permission=False)
     async def custom_skin(self, inter: disnake.AppCmdInter):
 
         inter, bot = await select_bot_pool(inter, return_new=True)
@@ -1799,7 +1799,7 @@ class RPCCog(commands.Cog):
             color=self.bot.get_color(),
             description="**Mini-guide to use the app to display the music you're listening to via RPC:\n\n"
                         "Download the app (musicbot_rpc.zip) "
-                        "[here](https://github.com/NICK-FURY-6023/LyricLoom/releases).\n\n"
+                        "[here](https://github.com/NICK-FURY-6023/LyricLoom.git).\n\n"
                         "Extract the musicbot_rpc.zip and in the folder, open the musicbot_rpc." \
                         "Add the websocket link below in the app (tab: Socket Settings):** ```ansi\n" \
                         f"{(self.bot.config['RPC_PUBLIC_URL'] or self.bot.config['RPC_SERVER']).replace('$PORT', os.environ.get('PORT', '80'))}```"

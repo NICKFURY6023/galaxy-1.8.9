@@ -45,19 +45,22 @@ def replaces(
                 requester = player.guild.get_member(player.current.requester)
                 requester_global_name = requester.global_name
                 requester_display_name = requester.display_name
+                requester_mention = requester.mention
                 requester_avatar = requester.display_avatar.replace(static_format="png", size=512).url
             else:
                 requester_global_name = "Recommendation"
                 requester_display_name = "Recommendation"
+                requester_mention = "Recommendation"
                 requester_avatar = player.guild.me.display_avatar.replace(static_format="png", size=512).url
         except:
             requester_global_name = "Unknown..."
             requester_display_name = "Unknown..."
+            requester_mention = f"<@{player.current.requester}>"
             requester_avatar = "https://i.ibb.co/LNpG5TM/unknown.png"
 
         txt = track_title_format(
             track_title=player.current.title,
-            track_author=player.current.author if not player.current.autoplay else "Recommendation",
+            track_author=player.current.author,
             track_url=player.current.uri,
             track_duration=player.current.duration if not player.current.is_stream else 0,
             data=txt
@@ -66,7 +69,7 @@ def replaces(
             replace('{playlist.name}', player.current.playlist_name or "Sem playlist"). \
             replace('{playlist.url}', player.current.playlist_url or player.controller_link). \
             replace('{player.loop.mode}', 'Disabled' if not player.loop else 'Current music' if player.loop == "current" else "Queue"). \
-            replace('{player.queue.size}', str(len(player.queue))). \
+            replace('{player.queue.size}', str(len(player.queue or player.queue_autoplay))). \
             replace('{player.volume}', str(player.volume)). \
             replace('{player.autoplay}', "Enabled" if player.autoplay else "Disabled"). \
             replace('{player.nightcore}', "Enabled" if player.nightcore else "Disabled"). \
@@ -75,7 +78,7 @@ def replaces(
             replace('{player.log.emoji}', player.command_log_emoji or ""). \
             replace('{requester.global_name}', requester_global_name). \
             replace('{requester.display_name}', requester_display_name). \
-            replace('{requester.mention}', f'<@{player.current.requester}>'). \
+            replace('{requester.mention}', requester_mention). \
             replace('{requester.avatar}', requester_avatar). \
             replace('{guild.color}', hex(player.guild.me.color.value)[2:]). \
             replace('{guild.icon}', player.guild.icon.with_static_format("png").url if player.guild.icon else ""). \

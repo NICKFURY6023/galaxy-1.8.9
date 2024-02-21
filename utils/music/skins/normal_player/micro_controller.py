@@ -66,9 +66,9 @@ class MicroController:
             disnake.ui.Button(emoji="⏮️", label="Back", custom_id=PlayerControls.back),
             disnake.ui.Button(emoji="⏹️", label="Stop", custom_id=PlayerControls.stop, style=disnake.ButtonStyle.red),
             disnake.ui.Button(emoji="⏭️", label="Skip", custom_id=PlayerControls.skip),
-            disnake.ui.Button(emoji="<:music_queue:703761160679194734>", label="Queue", custom_id=PlayerControls.queue,disabled=not player.queue),
-            disnake.ui.Button(emoji="💗", label="Add to your favorites", custom_id=PlayerControls.add_favorite),
-            disnake.ui.Button(emoji="⭐", label="Play favorite", custom_id=PlayerControls.enqueue_fav),
+            disnake.ui.Button(emoji="<:music_queue:703761160679194734>", label="Queue", custom_id=PlayerControls.queue,disabled=not (player.queue or player.queue_autoplay)),
+            disnake.ui.Button(emoji="💗", label="Add to Favorites", custom_id=PlayerControls.add_favorite),
+            disnake.ui.Button(emoji="⭐", label="Favorites", custom_id=PlayerControls.enqueue_fav),
         ]
 
         return data

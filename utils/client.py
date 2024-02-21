@@ -200,7 +200,7 @@ class BotPool:
     async def connect_rpc_ws(self):
 
         if not self.config["RUN_RPC_SERVER"] and (
-                not self.config["RPC_SERVER"] or self.config["RPC_SERVER"] == "ws://localhost:80/ws"):
+                not self.config["RPC_SERVER"] or self.config["RPC_SERVER"].replace("$PORT", port := os.environ.get("PORT", "80")) == f"ws://localhost:{port}/ws"):
             pass
         else:
             await self.ws_client.ws_loop()
@@ -597,9 +597,9 @@ class BotPool:
             if os.environ.get("REPL_SLUG"):
                 message += f"Check if the token has been added to the Replit secrets."
 
-                print(message + ": Guide on how to configure: https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo")
+                print(message + ": Guide on how to configure: https://gist.github.com/NICK-FURY-6023/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo")
 
-                message += f'. <a href="https://gist.github.com/zRitsu/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo" target="_blank">Click here</a> to view the guide on how to configure.'
+                message += f'. <a href="https://gist.github.com/NICK-FURY-6023/70737984cbe163f890dae05a80a3ddbe#2---com-o-projeto-j%C3%A1-criado-prossiga-as-etapas-abaixo" target="_blank">Click here</a> to view the guide on how to configure.'
 
             else:
                 message += "Check if the token has been configured in ENV/ENVIRONMENT or in the .env file."
@@ -857,18 +857,21 @@ class BotCore(commands.AutoShardedBot):
             for cmd in b.slash_commands:
                 c = self.get_slash_command(cmd.name)
                 if not c: continue
+                c.body.dm_permission = False
                 if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
             for cmd in b.user_commands:
                 c = self.get_user_command(cmd.name)
                 if not c: continue
+                c.body.dm_permission = False
                 if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
             for cmd in b.message_commands:
                 c = self.get_message_command(cmd.name)
                 if not c: continue
+                c.body.dm_permission = False
                 if c.extras.get("exclusive_cooldown"): continue
                 c._buckets = cmd._buckets
 
@@ -887,7 +890,7 @@ class BotCore(commands.AutoShardedBot):
 
     async def on_message(self, message: disnake.Message):
 
-        if not self.bot_ready or not self.appinfo:
+        if not self.bot_ready or not self.appinfo or self.is_closed():
             return
 
         if not message.guild:
@@ -1085,7 +1088,7 @@ class BotCore(commands.AutoShardedBot):
                   "as a public bot\n" \
                   "remember that if the bot is released to be added publicly, it will have to " \
                   "be under the conditions of the GPL-2 license: " \
-                  "https://github.com/zRitsu/MuseHeart-MusicBot/blob/main/LICENSE\n" \
+                  "https://github.com/NICK-FURY-6023/galaxy-1.8.9/blob/main/LICENSE\n" \
                   "If you do not want to follow the license conditions in your bot, you can make the bot private by unchecking the " \
                   f"public bot option by accessing the link: https://discord.com/developers/applications/{self.user.id}/bot"
 
@@ -1101,8 +1104,11 @@ class BotCore(commands.AutoShardedBot):
 
     async def on_application_command_autocomplete(self, inter: disnake.ApplicationCommandInteraction):
 
-        if not self.bot_ready or not inter.guild_id:
-            return
+        if not self.bot_ready or self.is_closed():
+            return []
+
+        if not inter.guild_id:
+            return []
 
         await super().on_application_command_autocomplete(inter)
 
@@ -1113,8 +1119,8 @@ class BotCore(commands.AutoShardedBot):
                              "Use on servers that I am in.")
             return
 
-        if not self.bot_ready:
-            await inter.send("I'm still booting ...\nPlease wait a little longer...", ephemeral=True)
+        if not self.bot_ready or self.is_closed():
+            await inter.send("I'm still initializing...\nPlease wait a little longer...", ephemeral=True)
             return
 
         if self.config["COMMAND_LOG"] and inter.guild and not (await self.is_owner(inter.author)):
@@ -1123,6 +1129,20 @@ class BotCore(commands.AutoShardedBot):
                       f" - [cmd: {inter.data.name}] {datetime.datetime.utcnow().strftime('%d/%m/%Y - %H:%M:%S')} (UTC) - {inter.filled_options}\n" + ("-" * 15))
             except:
                 traceback.print_exc()
+
+        if str(self.user.id) in self.config["INTERACTION_BOTS_CONTROLLER"]:
+
+            available_bot = False
+
+            for bot in self.pool.bots:
+                if bot.appinfo and (bot.appinfo.bot_public or await bot.is_owner(inter.author)) and bot.get_guild(inter.guild_id):
+                    available_bot = True
+                    break
+
+            if not available_bot:
+                await inter.send("**There are no bots available on the server, add at least one by clicking the button below.**",
+                                 ephemeral=True, components=[disnake.ui.Button(custom_id="bot_invite", label="Adicionar bots")])
+                return
 
         await super().on_application_command(inter)
 

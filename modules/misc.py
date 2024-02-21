@@ -658,8 +658,10 @@ class Misc(commands.Cog):
         if listeners:
             embed.description += f"> 🎧 **⠂Current listeners:** `{len(listeners):,}`\n"
 
-        if bot.pool.commit:
-            embed.description += f"> 📥 **⠂Current commit:** [`{bot.pool.commit[:7]}`]({bot.pool.remote_git_url}/commit/{bot.pool.commit})\n"
+   #     if bot.pool.commit:    #
+    #        embed.description += f"> 📥 **⠂Current commit:** [`{bot.pool.commit[:7]}`]({bot.pool.remote_git_url}/commit/{bot.pool.commit})\n"   #
+
+
 
         embed.description += f"> 🐍 **⠂Python Version:** `{platform.python_version()}`\n" \
                             f"> 📦 **⠂Disnake Version:** `{disnake.__version__}`\n" \
@@ -689,7 +691,7 @@ class Misc(commands.Cog):
             if user_data["custom_prefix"]:
                 embed.description += f"> ⌨️ **⠂Your User Prefix:** `{disnake.utils.escape_markdown(user_data['custom_prefix'], as_needed=True)}`\n"
 
-        links = "[`[Source]`](https://github.com/NICK-FURY-6023/LyricLoom)"
+        links = "[`[Source]`](https://github.com/NICK-FURY-6023/galaxy-1.8.9)"
 
         if bot.config["SUPPORT_SERVER"]:
             links = f"[`[Support]`]({bot.config['SUPPORT_SERVER']})  **|** {links}"
@@ -943,7 +945,7 @@ class GuildLog(commands.Cog):
         if str(self.bot.user.id) in self.bot.config["INTERACTION_BOTS_CONTROLLER"]:
             return
 
-        print(f"New server: {guild.name} - [{guild.id}]")
+        print(f"{self.bot.user.name} - Added to the server: {guild.name} - [{guild.id}]")
 
         try:
             guild_data = await self.bot.get_data(guild.id, db_name=DBModel.guilds)

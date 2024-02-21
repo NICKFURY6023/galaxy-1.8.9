@@ -18,6 +18,7 @@ from utils.music.errors import GenericError, ArgumentParsingError
 
 if TYPE_CHECKING:
     from utils.client import BotCore
+    from utils.music.models import LavalinkPlayer
 
 token_regex = re.compile(r'[a-zA-Z0-9_-]{23,28}\.[a-zA-Z0-9_-]{6,7}\.[a-zA-Z0-9_-]{27,}')
 
@@ -69,7 +70,11 @@ class CustomContext(commands.Context):
         self.store_message = None
         self.application_command = None
 
-    async def defer(self, ephemeral: bool = False):
+    async def defer(self, ephemeral: bool = False, *args, **kwargs):
+
+        if ephemeral:
+            return
+
         if self.bot.config["ENABLE_DEFER_TYPING"]:
             await self.trigger_typing()
         else:
@@ -446,8 +451,12 @@ async def send_idle_embed(
         channel = bot.get_channel(target.id)
 
         if isinstance(channel, disnake.Thread) and guild_data["player_controller"]["channel"] == str(channel.id):
+            if is_forum:
+                func = channel.fetch_message
+            else:
+                func = channel.parent.fetch_message
             try:
-                message = await channel.parent.fetch_message(channel.id)
+                message = await func(channel.id)
             except disnake.NotFound:
                 message = None
                 if isinstance(channel.parent, disnake.ForumChannel):
@@ -712,7 +721,7 @@ async def select_bot_pool(inter: Union[CustomContext, disnake.MessageInteraction
 def queue_track_index(inter: disnake.AppCmdInter, bot: BotCore, query: str, match_count: int = 1,
                       case_sensitive: bool = False):
 
-    player = bot.music.players[inter.guild_id]
+    player: LavalinkPlayer = bot.music.players[inter.guild_id]
 
     try:
         query, unique_id = query.split(" || ID > ")
@@ -725,7 +734,7 @@ def queue_track_index(inter: disnake.AppCmdInter, bot: BotCore, query: str, matc
 
     count = int(match_count)
 
-    for counter, track in enumerate(player.queue):
+    for counter, track in enumerate(player.queue + player.queue_autoplay):
 
         if unique_id is not None:
 
